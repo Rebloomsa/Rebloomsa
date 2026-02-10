@@ -1,0 +1,6 @@
+import { AuthContext, useAuthState } from '@/hooks/useAuth'
+
+export default function AuthProvider({ children }: { children: React.ReactNode }) {
+  const auth = useAuthState()
+  return <AuthContext value={auth}>{children}</AuthContext>
+}

@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #2a3d4e;
+  --color-navy-light: #3a5268;
+  --color-terracotta: #c97d60;
+  --color-terracotta-light: #d99a82;
+  --color-bloom-pink: #e8b4b8;
+  --color-bloom-pink-light: #f0cdd0;
+  --color-hope-green: #a8c69f;
+  --color-hope-green-light: #c2d9bb;
+  --color-warm-cream: #faf8f5;
+  --color-warm-cream-dark: #f0ece6;
+
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--color-navy);
+    background-color: var(--color-warm-cream);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-width: 320px;
+  }
+
+  #root {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer components {
+  .fade-in-section {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  }
+
+  .fade-in-section.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes bloom {
+  0% { transform: scale(0.8) rotate(-10deg); opacity: 0.5; }
+  50% { transform: scale(1.05) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@layer utilities {
+  .animate-gentle-pulse {
+    animation: gentle-pulse 2.5s ease-in-out infinite;
+  }
+
+  .animate-bloom {
+    animation: bloom 1.5s ease-out forwards;
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+}
