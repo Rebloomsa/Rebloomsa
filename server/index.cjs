@@ -8,7 +8,13 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://rebloomsa.co.za',
+    'https://www.rebloomsa.co.za',
+    'https://rebloomsa.pages.dev',
+  ],
+}));
 app.use(express.json());
 
 // Supabase admin client (service_role key for user management)
