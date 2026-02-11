@@ -104,7 +104,7 @@ export default function MessageThread({ partnerId, partnerName, refreshKey }: Me
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      supabase!.removeChannel(channel)
     }
   }, [user, partnerId])
 

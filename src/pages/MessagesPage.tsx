@@ -56,7 +56,7 @@ export default function MessagesPage() {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      supabase!.removeChannel(channel)
     }
   }, [user])
 

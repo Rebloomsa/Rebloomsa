@@ -24,7 +24,7 @@ export interface NewsletterEntry {
   email: string
 }
 
-async function sendEmail(endpoint: string, data: Record<string, string>) {
+async function sendEmail(endpoint: string, data: Record<string, string> | NewsletterEntry) {
   try {
     await fetch(`${apiUrl}${endpoint}`, {
       method: 'POST',

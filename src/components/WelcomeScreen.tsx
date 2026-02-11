@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom'
 import { Flower2, Users, MessageCircle, UserCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { useEffect, useState } from 'react'

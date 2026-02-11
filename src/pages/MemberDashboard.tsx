@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Search, MapPin, Eye, X } from 'lucide-react'
+import { Search, MapPin, Eye } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import MemberCard from '@/components/MemberCard'
 import MemberNav from '@/components/MemberNav'
 import WelcomeScreen from '@/components/WelcomeScreen'
@@ -64,7 +63,7 @@ export default function MemberDashboard() {
         setViewCount(views.length)
         // Fetch viewer details
         const viewerIds = [...new Set(views.map((v: any) => v.viewer_id))]
-        const { data: viewerMembers } = await supabase
+        const { data: viewerMembers } = await supabase!
           .from('members')
           .select('id, name, province')
           .in('id', viewerIds)

@@ -39,7 +39,7 @@ export default function MemberNav() {
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => { supabase!.removeChannel(channel) }
   }, [user])
 
   async function handleLogout() {
