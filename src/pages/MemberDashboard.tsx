@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Search, MapPin } from 'lucide-react'
+import { Search, MapPin, Eye, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import MemberCard from '@/components/MemberCard'
 import MemberNav from '@/components/MemberNav'
 import WelcomeScreen from '@/components/WelcomeScreen'
@@ -15,6 +16,13 @@ interface Member {
   bio: string | null
 }
 
+interface ProfileViewer {
+  viewer_id: string
+  viewed_at: string
+  viewer_name: string
+  viewer_province: string
+}
+
 export default function MemberDashboard() {
   const [members, setMembers] = useState<Member[]>([])
   const [search, setSearch] = useState('')
@@ -24,6 +32,9 @@ export default function MemberDashboard() {
   const [showWelcome, setShowWelcome] = useState(
     () => !localStorage.getItem('rebloom_welcomed')
   )
+  const [viewCount, setViewCount] = useState(0)
+  const [viewers, setViewers] = useState<ProfileViewer[]>([])
+  const [showViewers, setShowViewers] = useState(false)
   const { user } = useAuth()
 
   useEffect(() => {
@@ -35,6 +46,40 @@ export default function MemberDashboard() {
       .single()
       .then(({ data }) => {
         if (data?.province) setMyProvince(data.province)
+      })
+  }, [user])
+
+  // Fetch profile views for the past week
+  useEffect(() => {
+    if (!supabase || !user) return
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    supabase
+      .from('profile_views')
+      .select('viewer_id, viewed_at')
+      .eq('viewed_id', user.id)
+      .gte('viewed_at', oneWeekAgo)
+      .order('viewed_at', { ascending: false })
+      .then(async ({ data: views }) => {
+        if (!views || views.length === 0) { setViewCount(0); return }
+        setViewCount(views.length)
+        // Fetch viewer details
+        const viewerIds = [...new Set(views.map((v: any) => v.viewer_id))]
+        const { data: viewerMembers } = await supabase
+          .from('members')
+          .select('id, name, province')
+          .in('id', viewerIds)
+        const memberMap = new Map((viewerMembers || []).map((m: any) => [m.id, m]))
+        setViewers(
+          views.map((v: any) => {
+            const m = memberMap.get(v.viewer_id)
+            return {
+              viewer_id: v.viewer_id,
+              viewed_at: v.viewed_at,
+              viewer_name: m?.name || 'Unknown',
+              viewer_province: m?.province || '',
+            }
+          })
+        )
       })
   }, [user])
 
@@ -96,6 +141,52 @@ export default function MemberDashboard() {
           </h1>
           <p className="text-navy/60">Connect with fellow Rebloom members across South Africa</p>
         </div>
+
+        {/* Profile views card */}
+        {viewCount > 0 && !search && !provinceFilter && (
+          <div className="mb-8">
+            <div
+              className="bg-white rounded-xl border border-warm-cream-dark p-4 flex items-center justify-between cursor-pointer hover:shadow-sm transition-shadow"
+              onClick={() => setShowViewers(!showViewers)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-bloom-pink/20 flex items-center justify-center">
+                  <Eye className="h-5 w-5 text-terracotta" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-navy">
+                    {viewCount} {viewCount === 1 ? 'person' : 'people'} viewed your profile this week
+                  </p>
+                  <p className="text-xs text-navy/50">Click to {showViewers ? 'hide' : 'see who'}</p>
+                </div>
+              </div>
+            </div>
+            {showViewers && (
+              <div className="mt-2 bg-white rounded-xl border border-warm-cream-dark divide-y divide-warm-cream-dark">
+                {viewers.map((v, i) => (
+                  <div key={`${v.viewer_id}-${i}`} className="px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-bloom-pink/20 flex items-center justify-center">
+                        <span className="text-xs font-bold text-terracotta">
+                          {v.viewer_name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-navy">{v.viewer_name}</p>
+                        {v.viewer_province && (
+                          <p className="text-xs text-navy/50">{v.viewer_province}</p>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-navy/40">
+                      {new Date(v.viewed_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Members near you */}
         {nearbyMembers.length > 0 && !search && !provinceFilter && (

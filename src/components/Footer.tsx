@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Flower2 } from 'lucide-react'
 
 export default function Footer() {
@@ -31,9 +32,9 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-3">Legal</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-bloom-pink transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-bloom-pink transition-colors">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-bloom-pink transition-colors">Safety Guidelines</a></li>
+              <li><Link to="/privacy" className="hover:text-bloom-pink transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-bloom-pink transition-colors">Terms of Service</Link></li>
+              <li><Link to="/safety" className="hover:text-bloom-pink transition-colors">Safety Guidelines</Link></li>
             </ul>
           </div>
 

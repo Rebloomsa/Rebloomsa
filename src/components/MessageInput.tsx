@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002'
+
 interface MessageInputProps {
   recipientId: string
   onSent: () => void
@@ -38,7 +40,7 @@ export default function MessageInput({ recipientId, onSent }: MessageInputProps)
         .single()
         .then(({ data: sender }) => {
           if (sender?.name) {
-            fetch('/api/message-notification', {
+            fetch(`${apiUrl}/api/message-notification`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ recipientId, senderName: sender.name }),

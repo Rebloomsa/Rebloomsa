@@ -7,6 +7,12 @@ import MemberDashboard from './pages/MemberDashboard'
 import MemberProfile from './pages/MemberProfile'
 import MessagesPage from './pages/MessagesPage'
 import AdminDashboard from './pages/AdminDashboard'
+import NotFoundPage from './pages/NotFoundPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import TermsPage from './pages/TermsPage'
+import SafetyPage from './pages/SafetyPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
+import EditProfilePage from './pages/EditProfilePage'
 
 function App() {
   return (
@@ -15,6 +21,10 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/safety" element={<SafetyPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/members"
             element={
@@ -28,6 +38,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MemberProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/members/edit-profile"
+            element={
+              <ProtectedRoute>
+                <EditProfilePage />
               </ProtectedRoute>
             }
           />
@@ -47,6 +65,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

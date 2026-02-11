@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Flower2, LogOut, Check, X, Download, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { Flower2, LogOut, Check, X, Download, Clock, CheckCircle, XCircle, Mail, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -22,6 +22,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [tab, setTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [digestSending, setDigestSending] = useState(false)
+  const [digestResult, setDigestResult] = useState<string | null>(null)
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
 
@@ -97,6 +99,25 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleSendDigest() {
+    if (!confirm('Send the weekly email digest to all eligible members?')) return
+    setDigestSending(true)
+    setDigestResult(null)
+    try {
+      const res = await fetch(`${apiUrl}/api/admin/send-weekly-digest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user?.id}` },
+      })
+      if (!res.ok) throw new Error('Failed to send digest')
+      const data = await res.json()
+      setDigestResult(`Digest sent to ${data.sent} of ${data.total} members`)
+    } catch (err: any) {
+      setDigestResult(`Error: ${err.message}`)
+    } finally {
+      setDigestSending(false)
+    }
+  }
+
   async function handleLogout() {
     await signOut()
     navigate('/')
@@ -119,6 +140,10 @@ export default function AdminDashboard() {
             Rebloom Admin
           </a>
           <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={handleSendDigest} disabled={digestSending}>
+              {digestSending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+              {digestSending ? 'Sending...' : 'Send Digest'}
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExportCSV}>
               <Download className="h-4 w-4 mr-2" />
               Export CSV
@@ -156,6 +181,13 @@ export default function AdminDashboard() {
             <p className="text-xs text-navy/50">Rejected</p>
           </div>
         </div>
+
+        {/* Digest result */}
+        {digestResult && (
+          <div className={`mb-6 px-4 py-3 rounded-lg text-sm ${digestResult.startsWith('Error') ? 'bg-red-50 text-red-700' : 'bg-hope-green/10 text-hope-green'}`}>
+            {digestResult}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-warm-cream-dark rounded-lg p-1 w-fit">

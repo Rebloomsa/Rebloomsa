@@ -1,10 +1,12 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Card } from './ui/card'
 import { useFadeIn } from '@/hooks/useFadeIn'
 import { submitWaitlist } from '@/lib/supabase'
-import { CheckCircle, Loader2 } from 'lucide-react'
+import { CheckCircle, Loader2, Heart } from 'lucide-react'
+
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002'
 
 const provinces = [
   'Gauteng', 'Western Cape', 'KwaZulu-Natal', 'Eastern Cape',
@@ -19,6 +21,8 @@ export default function SignupForm() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [referrerName, setReferrerName] = useState('')
+  const [referralCode, setReferralCode] = useState('')
 
   const [form, setForm] = useState({
     name: '',
@@ -27,6 +31,20 @@ export default function SignupForm() {
     age_range: '',
     story: '',
   })
+
+  // Read ?ref= from URL and validate
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const ref = params.get('ref')
+    if (!ref) return
+    setReferralCode(ref)
+    fetch(`${apiUrl}/api/referral/${encodeURIComponent(ref)}`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.firstName) setReferrerName(data.firstName)
+      })
+      .catch(() => {})
+  }, [])
 
   const update = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -49,12 +67,11 @@ export default function SignupForm() {
     if (validateStep()) setStep((s) => s + 1)
   }
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     setSubmitting(true)
     setError('')
     try {
-      await submitWaitlist(form)
+      await submitWaitlist({ ...form, referred_by: referralCode || undefined })
       setSuccess(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
@@ -84,6 +101,13 @@ export default function SignupForm() {
   return (
     <section id="signup" className="py-24 sm:py-32 px-6 sm:px-8 bg-white" ref={fadeIn.ref}>
       <div className={`max-w-lg mx-auto ${fadeIn.className}`}>
+        {referrerName && (
+          <div className="flex items-center justify-center gap-2 mb-6 bg-bloom-pink/20 rounded-full px-4 py-2 w-fit mx-auto">
+            <Heart className="h-4 w-4 text-terracotta" />
+            <span className="text-sm font-medium text-navy">Invited by {referrerName}</span>
+          </div>
+        )}
+
         <h2 className="font-heading text-3xl sm:text-4xl font-bold text-center text-navy mb-5">
           Join the Waitlist
         </h2>
@@ -108,7 +132,7 @@ export default function SignupForm() {
         </div>
 
         <Card className="p-8">
-          <form onSubmit={handleSubmit}>
+          <div>
             {step === 1 && (
               <div className="space-y-5">
                 <div>
@@ -192,7 +216,7 @@ export default function SignupForm() {
                   Continue
                 </Button>
               ) : (
-                <Button type="submit" disabled={submitting} className="flex-1">
+                <Button type="button" disabled={submitting} onClick={handleSubmit} className="flex-1">
                   {submitting ? (
                     <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Joining...</>
                   ) : (
@@ -201,7 +225,7 @@ export default function SignupForm() {
                 </Button>
               )}
             </div>
-          </form>
+          </div>
         </Card>
       </div>
     </section>

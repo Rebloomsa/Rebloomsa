@@ -17,6 +17,7 @@ export interface WaitlistEntry {
   province: string
   age_range: string
   story: string
+  referred_by?: string
 }
 
 export interface NewsletterEntry {
@@ -41,7 +42,9 @@ export async function submitWaitlist(entry: WaitlistEntry) {
     console.log('Supabase not configured — waitlist entry:', entry)
     return { success: true, demo: true }
   }
-  const { error } = await supabase.from('waitlist').insert([entry])
+  const { referred_by, ...waitlistData } = entry
+  const insertData = referred_by ? { ...waitlistData, referred_by } : waitlistData
+  const { error } = await supabase.from('waitlist').insert([insertData])
   if (error) {
     if (error.code === '23505') {
       throw new Error("You're already on the waitlist!")
@@ -49,7 +52,7 @@ export async function submitWaitlist(entry: WaitlistEntry) {
     throw error
   }
   // Send confirmation + notification emails (non-blocking)
-  sendEmail('/api/waitlist-email', entry)
+  sendEmail('/api/waitlist-email', waitlistData as Record<string, string>)
   return { success: true }
 }
 

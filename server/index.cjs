@@ -35,6 +35,25 @@ transporter.verify().then(() => {
   console.error('SMTP connection failed:', err.message);
 });
 
+// --- Referral code validation ---
+app.get('/api/referral/:code', async (req, res) => {
+  const { code } = req.params;
+  if (!code) return res.status(400).json({ error: 'Code required' });
+  try {
+    const { data: member, error } = await supabaseAdmin
+      .from('members')
+      .select('name')
+      .eq('referral_code', code)
+      .single();
+    if (error || !member) {
+      return res.status(404).json({ error: 'Invalid referral code' });
+    }
+    res.json({ firstName: member.name.split(' ')[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to validate referral' });
+  }
+});
+
 // --- Waitlist signup emails ---
 app.post('/api/waitlist-email', async (req, res) => {
   const { name, email, province, age_range, story } = req.body;
@@ -231,7 +250,12 @@ app.post('/api/admin/approve', requireAdmin, async (req, res) => {
     });
     if (authErr) throw authErr;
 
-    // 3. Insert member profile
+    // 3. Generate unique referral code (6-char alphanumeric)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let referralCode = '';
+    for (let i = 0; i < 6; i++) referralCode += chars.charAt(Math.floor(Math.random() * chars.length));
+
+    // 4. Insert member profile
     const { error: memberErr } = await supabaseAdmin.from('members').insert([{
       id: authData.user.id,
       name: entry.name,
@@ -239,30 +263,51 @@ app.post('/api/admin/approve', requireAdmin, async (req, res) => {
       province: entry.province,
       age_range: entry.age_range,
       bio: entry.story || null,
+      referral_code: referralCode,
     }]);
     if (memberErr) throw memberErr;
 
-    // 4. Send a welcome message from the founder (in-app)
+    // 5. If this person was referred, notify the referrer
+    if (entry.referred_by) {
+      try {
+        const { data: referrer } = await supabaseAdmin
+          .from('members')
+          .select('id')
+          .eq('referral_code', entry.referred_by)
+          .single();
+        if (referrer) {
+          await supabaseAdmin.from('messages').insert({
+            sender_id: req.adminUser.id,
+            recipient_id: referrer.id,
+            content: `Your friend ${entry.name.split(' ')[0]} has joined Rebloom. Thank you for helping grow this community.`,
+          });
+        }
+      } catch (refErr) {
+        console.warn('Referral notification failed (non-blocking):', refErr.message);
+      }
+    }
+
+    // 6. Send a welcome message from the founder (in-app)
     try {
       await supabaseAdmin.from('messages').insert({
         sender_id: req.adminUser.id,
         recipient_id: authData.user.id,
-        content: `Hi ${entry.name.split(' ')[0]}, this is Darryl — I founded Rebloom after losing my own partner. I personally reviewed your profile and I'm glad you're here.\n\nIf you're not sure where to start, just browse the directory and say hello to someone. Everyone here remembers what that first message felt like.\n\nNo pressure. Welcome home.\n\n— Darryl`,
+        content: `Hi ${entry.name.split(' ')[0]}, my name is Darryl James and I created Rebloom SA because I watched my mother navigate one of the most difficult journeys anyone can face — finding connection again after losing my father.\n\nAfter his passing, I saw her struggle with loneliness and the desire for companionship, but the existing options felt wrong. That's why I built Rebloom — a place where widows and widowers across South Africa can find understanding, safety, and meaningful connections.\n\nEvery member is personally verified by me because I believe this community deserves nothing less than genuine care. I personally reviewed your profile and I'm glad you're here.\n\nIf you're not sure where to start, just browse the directory and say hello to someone. Everyone here remembers what that first message felt like.\n\nAfter loss, life doesn't end — it blooms again.\n\n— Darryl James, Founder of Rebloom SA`,
       });
     } catch (msgErr) {
       console.warn('Welcome message failed (non-blocking):', msgErr.message);
     }
 
-    // 5. Update waitlist status
+    // 7. Update waitlist status
     await supabaseAdmin.from('waitlist').update({ status: 'approved' }).eq('id', waitlistId);
 
-    // 6. Send password reset email so user can set their own password
+    // 8. Send password reset email so user can set their own password
     await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email: entry.email,
     });
 
-    // 7. Send styled approval email via SMTP
+    // 9. Send styled approval email via SMTP
     try {
       await transporter.sendMail({
         from: '"Rebloom SA" <hello@rebloomsa.co.za>',
@@ -292,7 +337,7 @@ app.post('/api/admin/approve', requireAdmin, async (req, res) => {
                 </a>
               </div>
               <p style="font-size: 14px; color: #2a3d4e; opacity: 0.6; line-height: 1.5;">
-                Use the "Forgot password" link on the login page to set your password for the first time.
+                On the login page, enter your email and click "Forgot your password?" to receive a link to set your password.
               </p>
               <div style="background: linear-gradient(135deg, #e8b4b8 0%, #c97d60 100%); border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
                 <p style="color: white; font-size: 18px; font-style: italic; margin: 0;">
@@ -359,6 +404,94 @@ app.get('/api/admin/export', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Export error:', err.message);
     res.status(500).json({ error: 'Export failed' });
+  }
+});
+
+// --- Weekly email digest ---
+app.post('/api/admin/send-weekly-digest', requireAdmin, async (req, res) => {
+  try {
+    // 1. Fetch all members
+    const { data: members, error: membersErr } = await supabaseAdmin
+      .from('members')
+      .select('id, name, email, last_digest_at');
+    if (membersErr) throw membersErr;
+
+    // 2. Count new members in the past 7 days
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { count: newMemberCount } = await supabaseAdmin
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', oneWeekAgo);
+
+    let sentCount = 0;
+    const siteUrl = process.env.SITE_URL || 'https://rebloomsa.co.za';
+
+    for (const member of (members || [])) {
+      // 3. Count unread messages for this member
+      const { count: unreadCount } = await supabaseAdmin
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', member.id)
+        .is('read_at', null);
+
+      const unread = unreadCount || 0;
+      const newMembers = newMemberCount || 0;
+
+      // 4. Skip if nothing to report
+      if (unread === 0 && newMembers === 0) continue;
+
+      // 5. Send branded digest email
+      try {
+        await transporter.sendMail({
+          from: '"Rebloom SA" <hello@rebloomsa.co.za>',
+          to: member.email,
+          subject: 'This week at Rebloom',
+          html: `
+            <div style="font-family: 'Lato', Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #2a3d4e;">
+              <div style="text-align: center; padding: 32px 0 24px;">
+                <h1 style="font-family: 'Georgia', serif; font-size: 28px; color: #2a3d4e; margin: 0;">
+                  This Week at Rebloom
+                </h1>
+              </div>
+              <div style="background: #faf8f5; border-radius: 12px; padding: 32px;">
+                <p style="font-size: 16px; line-height: 1.6;">Hi <strong>${member.name.split(' ')[0]}</strong>,</p>
+                ${unread > 0 ? `<p style="font-size: 16px; line-height: 1.6;">You have <strong>${unread} unread message${unread === 1 ? '' : 's'}</strong> waiting for you.</p>` : ''}
+                ${newMembers > 0 ? `<p style="font-size: 16px; line-height: 1.6;"><strong>${newMembers} new member${newMembers === 1 ? '' : 's'}</strong> joined this week.</p>` : ''}
+                <div style="text-align: center; margin: 28px 0;">
+                  <a href="${siteUrl}/members"
+                     style="display: inline-block; background: #c97d60; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                    Come Back to Rebloom
+                  </a>
+                </div>
+                <div style="background: linear-gradient(135deg, #e8b4b8 0%, #c97d60 100%); border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
+                  <p style="color: white; font-size: 18px; font-style: italic; margin: 0;">
+                    "After loss, life doesn't end — it blooms again."
+                  </p>
+                </div>
+              </div>
+              <div style="text-align: center; padding: 24px 0; font-size: 12px; color: #2a3d4e; opacity: 0.4;">
+                <p>&copy; ${new Date().getFullYear()} Rebloom SA. All rights reserved.</p>
+              </div>
+            </div>
+          `,
+        });
+
+        // 6. Update last_digest_at
+        await supabaseAdmin
+          .from('members')
+          .update({ last_digest_at: new Date().toISOString() })
+          .eq('id', member.id);
+
+        sentCount++;
+      } catch (emailErr) {
+        console.warn(`Digest email failed for ${member.email}:`, emailErr.message);
+      }
+    }
+
+    res.json({ success: true, sent: sentCount, total: (members || []).length });
+  } catch (err) {
+    console.error('Weekly digest error:', err.message);
+    res.status(500).json({ error: 'Failed to send weekly digest' });
   }
 });
 
