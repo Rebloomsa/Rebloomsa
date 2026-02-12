@@ -24,13 +24,13 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
   const [digestSending, setDigestSending] = useState(false)
   const [digestResult, setDigestResult] = useState<string | null>(null)
-  const { user, signOut } = useAuth()
+  const { user, session, signOut } = useAuth()
   const navigate = useNavigate()
 
   const fetchEntries = useCallback(async () => {
     try {
       const res = await fetch(`${apiUrl}/api/admin/waitlist`, {
-        headers: { 'Authorization': `Bearer ${user?.id}` },
+        headers: { 'Authorization': `Bearer ${session?.access_token}` },
       })
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
@@ -49,7 +49,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`${apiUrl}/api/admin/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user?.id}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
         body: JSON.stringify({ waitlistId: entry.id }),
       })
       if (!res.ok) {
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`${apiUrl}/api/admin/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user?.id}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
         body: JSON.stringify({ waitlistId: entry.id }),
       })
       if (!res.ok) throw new Error('Rejection failed')
@@ -84,7 +84,7 @@ export default function AdminDashboard() {
   async function handleExportCSV() {
     try {
       const res = await fetch(`${apiUrl}/api/admin/export`, {
-        headers: { 'Authorization': `Bearer ${user?.id}` },
+        headers: { 'Authorization': `Bearer ${session?.access_token}` },
       })
       if (!res.ok) throw new Error('Export failed')
       const blob = await res.blob()
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`${apiUrl}/api/admin/send-weekly-digest`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user?.id}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
       })
       if (!res.ok) throw new Error('Failed to send digest')
       const data = await res.json()

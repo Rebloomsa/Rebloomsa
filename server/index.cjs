@@ -207,9 +207,9 @@ async function requireAdmin(req, res, next) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  const userId = authHeader.replace('Bearer ', '');
-  // Look up the user to verify they're the admin
-  const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+  const token = authHeader.replace('Bearer ', '');
+  // Verify the JWT and extract the user
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !user || user.email !== process.env.NOTIFY_EMAIL) {
     return res.status(403).json({ error: 'Forbidden — admin access only' });
   }
