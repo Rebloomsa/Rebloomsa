@@ -374,11 +374,77 @@ app.post('/api/admin/reject', requireAdmin, async (req, res) => {
   if (!waitlistId) return res.status(400).json({ error: 'waitlistId required' });
 
   try {
+    // 1. Get the waitlist entry
+    const { data: entry, error: fetchErr } = await supabaseAdmin
+      .from('waitlist')
+      .select('*')
+      .eq('id', waitlistId)
+      .single();
+    if (fetchErr || !entry) throw new Error('Waitlist entry not found');
+
+    // 2. Update status
     const { error } = await supabaseAdmin
       .from('waitlist')
       .update({ status: 'rejected' })
       .eq('id', waitlistId);
     if (error) throw error;
+
+    // 3. Send rejection email
+    try {
+      await transporter.sendMail({
+        from: '"Rebloom SA" <hello@rebloomsa.co.za>',
+        to: entry.email,
+        subject: 'An update on your Rebloom SA application',
+        html: `
+          <div style="font-family: 'Lato', Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #2a3d4e;">
+            <div style="text-align: center; padding: 32px 0 24px;">
+              <h1 style="font-family: 'Georgia', serif; font-size: 28px; color: #2a3d4e; margin: 0;">
+                Rebloom SA
+              </h1>
+            </div>
+            <div style="background: #faf8f5; border-radius: 12px; padding: 32px;">
+              <p style="font-size: 16px; line-height: 1.6;">Hi <strong>${entry.name}</strong>,</p>
+              <p style="font-size: 16px; line-height: 1.6;">
+                Thank you for your interest in joining the Rebloom SA community. We truly appreciate
+                you sharing your story with us.
+              </p>
+              <p style="font-size: 16px; line-height: 1.6;">
+                After careful review, we're unable to approve your application at this time.
+                Rebloom SA is a carefully curated community for widows and widowers in South Africa,
+                and we have to ensure that every member meets our community guidelines to maintain
+                a safe, supportive space for everyone.
+              </p>
+              <p style="font-size: 16px; line-height: 1.6;">
+                This doesn't have to be the end of the road. If you believe your application
+                was declined in error, or if your circumstances have changed, you're welcome
+                to reach out to us directly and we'll be happy to reconsider.
+              </p>
+              <div style="text-align: center; margin: 28px 0;">
+                <a href="mailto:hello@rebloomsa.co.za"
+                   style="display: inline-block; background: #c97d60; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                  Contact Us
+                </a>
+              </div>
+              <p style="font-size: 14px; color: #2a3d4e; opacity: 0.6; line-height: 1.5;">
+                We wish you all the best on your journey, and we hope you find the connection
+                and companionship you deserve.
+              </p>
+              <div style="background: linear-gradient(135deg, #e8b4b8 0%, #c97d60 100%); border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
+                <p style="color: white; font-size: 18px; font-style: italic; margin: 0;">
+                  "After loss, life doesn't end — it blooms again."
+                </p>
+              </div>
+            </div>
+            <div style="text-align: center; padding: 24px 0; font-size: 12px; color: #2a3d4e; opacity: 0.4;">
+              <p>&copy; ${new Date().getFullYear()} Rebloom SA. All rights reserved.</p>
+            </div>
+          </div>
+        `,
+      });
+    } catch (emailErr) {
+      console.warn('Rejection email failed (non-blocking):', emailErr.message);
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error('Reject error:', err.message);
