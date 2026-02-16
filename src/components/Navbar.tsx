@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Menu, X, Flower2 } from 'lucide-react'
+import { Menu, X, Flower2, LogIn } from 'lucide-react'
 import { Button } from './ui/button'
 
 const navLinks = [
@@ -31,25 +31,28 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
-          <a
-            href="/login"
-            className="text-navy/70 hover:text-terracotta transition-colors text-sm font-medium"
-          >
-            Member Login
-          </a>
           <Button size="sm" onClick={() => document.getElementById('signup')?.scrollIntoView({ behavior: 'smooth' })}>
             Join Waitlist
           </Button>
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          className="md:hidden text-navy cursor-pointer"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        {/* Login + Mobile toggle */}
+        <div className="flex items-center gap-2">
+          <a
+            href="/login"
+            className="flex items-center gap-1.5 text-sm font-medium text-navy/70 hover:text-terracotta transition-colors"
+          >
+            <LogIn className="h-4 w-4" />
+            <span className="hidden sm:inline">Member</span> Login
+          </a>
+          <button
+            className="md:hidden text-navy cursor-pointer"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
@@ -65,13 +68,6 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
-          <a
-            href="/login"
-            className="block py-3 text-navy/70 hover:text-terracotta transition-colors font-medium"
-            onClick={() => setMobileOpen(false)}
-          >
-            Member Login
-          </a>
           <Button
             className="w-full mt-2"
             size="sm"
