@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Flower2, LogOut, MessageCircle, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
@@ -55,11 +54,13 @@ export default function MemberNav() {
           Rebloom SA
         </a>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/members/messages')}>
+          <Button variant="ghost" size="sm" className="relative" onClick={() => navigate('/members/messages')}>
             <MessageCircle className="h-4 w-4 mr-1" />
             Messages
             {unreadCount > 0 && (
-              <Badge className="ml-1.5 text-xs px-1.5 py-0">{unreadCount}</Badge>
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold px-1.5">
+                {unreadCount}
+              </span>
             )}
           </Button>
           {isAdmin && (
