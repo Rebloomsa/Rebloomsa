@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Flower2, LogOut, MessageCircle, Shield } from 'lucide-react'
+import { Flower2, LogOut, MessageCircle, Shield, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
@@ -8,11 +8,23 @@ import { supabase } from '@/lib/supabase'
 export default function MemberNav() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [memberName, setMemberName] = useState('')
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (user?.email === 'hello@rebloomsa.co.za') setIsAdmin(true)
+    if (!user) return
+    if (user.email === 'hello@rebloomsa.co.za') setIsAdmin(true)
+
+    async function fetchName() {
+      const { data } = await supabase!
+        .from('members')
+        .select('name')
+        .eq('id', user!.id)
+        .single()
+      if (data?.name) setMemberName(data.name.split(' ')[0])
+    }
+    fetchName()
   }, [user])
 
   useEffect(() => {
@@ -54,6 +66,12 @@ export default function MemberNav() {
           Rebloom SA
         </a>
         <div className="flex items-center gap-2">
+          {memberName && (
+            <span className="hidden sm:flex items-center gap-1.5 text-sm text-navy/70 font-medium mr-1">
+              <User className="h-4 w-4" />
+              {memberName}
+            </span>
+          )}
           <Button variant="ghost" size="sm" className="relative" onClick={() => navigate('/members/messages')}>
             <MessageCircle className="h-4 w-4 mr-1" />
             Messages
