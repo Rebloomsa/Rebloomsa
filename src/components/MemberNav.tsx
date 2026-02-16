@@ -13,8 +13,10 @@ export default function MemberNav() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    setIsAdmin(false)
+    setMemberName('')
     if (!user) return
-    if (user.email === 'hello@rebloomsa.co.za') setIsAdmin(true)
+    setIsAdmin(user.email === 'hello@rebloomsa.co.za')
 
     async function fetchName() {
       const { data } = await supabase!
@@ -25,9 +27,10 @@ export default function MemberNav() {
       if (data?.name) setMemberName(data.name.split(' ')[0])
     }
     fetchName()
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
+    setUnreadCount(0)
     if (!supabase || !user) return
 
     async function fetchUnread() {
@@ -42,7 +45,7 @@ export default function MemberNav() {
     fetchUnread()
 
     const channel = supabase
-      .channel('unread-badge')
+      .channel(`unread-badge-${user.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'messages' },
@@ -51,7 +54,7 @@ export default function MemberNav() {
       .subscribe()
 
     return () => { supabase!.removeChannel(channel) }
-  }, [user])
+  }, [user?.id])
 
   async function handleLogout() {
     await signOut()
