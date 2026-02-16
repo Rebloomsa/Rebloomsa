@@ -31,6 +31,12 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          <a
+            href="/login"
+            className="text-navy/70 hover:text-terracotta transition-colors text-sm font-medium"
+          >
+            Member Login
+          </a>
           <Button size="sm" onClick={() => document.getElementById('signup')?.scrollIntoView({ behavior: 'smooth' })}>
             Join Waitlist
           </Button>
@@ -59,6 +65,13 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          <a
+            href="/login"
+            className="block py-3 text-navy/70 hover:text-terracotta transition-colors font-medium"
+            onClick={() => setMobileOpen(false)}
+          >
+            Member Login
+          </a>
           <Button
             className="w-full mt-2"
             size="sm"
