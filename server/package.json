@@ -1,0 +1,16 @@
+{
+  "name": "rebloomsa-server",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node index.cjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.1"
+  }
+}

@@ -639,6 +639,10 @@ app.post('/api/message-notification', async (req, res) => {
   }
 });
 
+// --- Social automation module ---
+const social = require('./social/index.cjs');
+social.init({ app, supabaseAdmin, transporter, requireAdmin });
+
 const PORT = process.env.API_PORT || 3002;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Email API server running on port ${PORT}`);
