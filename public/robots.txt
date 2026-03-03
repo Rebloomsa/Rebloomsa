@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /members
+Disallow: /admin
+Sitemap: https://rebloomsa.co.za/sitemap.xml
