@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Flower2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { getWaitlistCount } from '@/lib/supabase'
@@ -20,9 +19,9 @@ export default function Hero() {
       </div>
 
       <div className="relative max-w-3xl mx-auto px-6 sm:px-8 text-center py-24 sm:py-32">
-        {/* Animated flower */}
-        <div className="animate-bloom mb-10">
-          <Flower2 className="h-20 w-20 text-terracotta mx-auto animate-float" strokeWidth={1.5} />
+        {/* Brand banner */}
+        <div className="mb-10">
+          <img src="/rebloom-banner.jpg" alt="Rebloom SA — Grow. Inspire. Thrive." className="mx-auto w-full max-w-md sm:max-w-lg rounded-xl shadow-lg" />
         </div>
 
         {/* Waitlist badge */}

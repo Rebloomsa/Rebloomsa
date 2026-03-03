@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Menu, X, LogIn } from 'lucide-react'
+import { Menu, X, Flower2, LogIn } from 'lucide-react'
 import { Button } from './ui/button'
 
 const navLinks = [
@@ -15,8 +15,9 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-warm-cream/90 backdrop-blur-md border-b border-warm-cream-dark">
       <div className="max-w-5xl mx-auto px-6 sm:px-8 w-full flex items-center justify-between h-16">
-        <a href="#" className="flex items-center">
-          <img src="/rebloom-banner.jpg" alt="Rebloom SA — Grow. Inspire. Thrive." className="h-10 sm:h-12 w-auto" />
+        <a href="#" className="flex items-center gap-2 text-navy font-heading text-2xl font-bold">
+          <Flower2 className="h-7 w-7 text-terracotta" />
+          Rebloom SA
         </a>
 
         {/* Desktop nav */}
